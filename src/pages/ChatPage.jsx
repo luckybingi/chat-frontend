@@ -9,8 +9,9 @@ import io from "socket.io-client";
 
 const ENDPOINT = `${import.meta.env.VITE_API_URL}`;
 let socket;
-
+const socketRef = { current: null }
 const ChatPage = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
@@ -70,44 +71,80 @@ const [loadingSummary, setLoadingSummary] = useState(false);
   //   };
   // }, [navigate, selectedChat]);
 
-useEffect(() => {
-  const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-  if (!userInfo) {
-    navigate("/login");
-    return;
-  }
+// useEffect(() => {
+//   const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+//   if (!userInfo) {
+//     navigate("/login");
+//     return;
+//   }
 
-  setUser(userInfo);
-  fetchChats(userInfo);
+//   setUser(userInfo);
+//   fetchChats(userInfo);
 
-  // ✅ Connect socket only once
-  if (!socket) {
-    socket = io(ENDPOINT);
-    socket.emit("setup", userInfo);
-    socket.on("connected", () => { });
-  }
+//   // ✅ Connect socket only once
+//   if (!socket) {
+//     socket = io(ENDPOINT);
+//     socket.emit("setup", userInfo);
+//     socket.on("connected", () => { });
+//   }
 
-  // ✅ Join the selected chat room
-  if (selectedChat) {
-    socket.emit("join chat", selectedChat._id);
-  }
+//   // ✅ Join the selected chat room
+//   if (selectedChat) {
+//     socket.emit("join chat", selectedChat._id);
+//   }
 
-  // ✅ Handle incoming messages
-  const handleMessage = (newMsg) => {
-    if (!selectedChat || selectedChat._id !== newMsg.chat._id) return;
-    setMessages((prev) => [...prev, newMsg]);
-  };
+//   // ✅ Handle incoming messages
+//   const handleMessage = (newMsg) => {
+//     if (!selectedChat || selectedChat._id !== newMsg.chat._id) return;
+//     setMessages((prev) => [...prev, newMsg]);
+//   };
 
-  socket.on("message received", handleMessage);
+//   socket.on("message received", handleMessage);
 
-  // ✅ Cleanup to prevent duplicate listeners
-  return () => {
-    socket.off("message received", handleMessage);
-  };
-}, [navigate, selectedChat]);
+//   // ✅ Cleanup to prevent duplicate listeners
+//   return () => {
+//     socket.off("message received", handleMessage);
+//   };
+// }, [navigate, selectedChat]);
 
 
+  useEffect(() => {
+    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+    if (!userInfo) {
+      navigate("/login");
+      return;
+    }
 
+    setUser(userInfo);
+    fetchChats(userInfo);
+
+    // ✅ Connect socket only once
+    if (!socketRef.current) {
+      socketRef.current = io(ENDPOINT);
+      socketRef.current.emit("setup", userInfo);
+      socketRef.current.on("connected", () => { });
+    }
+
+    // ✅ Message listener
+    const handleMessage = (newMsg) => {
+      if (!selectedChat || selectedChat._id !== newMsg.chat._id) return;
+      setMessages((prev) => [...prev, newMsg]);
+    };
+
+    socketRef.current.on("message received", handleMessage);
+
+    // ✅ Cleanup
+    return () => {
+      socketRef.current?.off("message received", handleMessage);
+    };
+  }, [navigate]);
+
+  // ✅ Join selected chat when it changes
+  useEffect(() => {
+    if (selectedChat && socketRef.current) {
+      socketRef.current.emit("join chat", selectedChat._id);
+    }
+  }, [selectedChat]);
 
   const fetchChats = async (userInfo) => {
     try {
@@ -120,6 +157,9 @@ useEffect(() => {
       alert("Failed to load chats");
     }
   };
+
+
+
 
   const fetchMessages = async (chatId) => {
     if (!user) return;
