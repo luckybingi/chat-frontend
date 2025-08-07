@@ -64,7 +64,7 @@ const [loadingSummary, setLoadingSummary] = useState(false);
     socket.on("message received", handleMessage);
 
     // ✅ Cleanup to prevent duplicate listeners
-    
+
     return () => {
       socket.off("message received", handleMessage);
     };
@@ -111,6 +111,7 @@ const [loadingSummary, setLoadingSummary] = useState(false);
           Authorization: `Bearer ${user.token}`,
         },
       };
+
       const { data } = await axios.post(
         `${ENDPOINT}/api/message`,
         { content: newMessage, chatId: selectedChat._id },
@@ -132,6 +133,10 @@ const [loadingSummary, setLoadingSummary] = useState(false);
     }
 
     try {
+          const localTime = new Date(scheduledTime);
+
+    const utcTime = new Date(localTime.getTime() - localTime.getTimezoneOffset() * 60000);
+    
       const config = {
         headers: {
           "Content-Type": "application/json",
@@ -144,7 +149,8 @@ const [loadingSummary, setLoadingSummary] = useState(false);
         {
           content: newMessage,
           chatId: selectedChat._id,
-          scheduledTime,
+          // scheduledTime,
+           scheduledTime: utcTime.toISOString(),
         },
         config
       );
