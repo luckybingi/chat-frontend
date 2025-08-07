@@ -9,9 +9,7 @@ import io from "socket.io-client";
 
 const ENDPOINT = `${import.meta.env.VITE_API_URL}`;
 let socket;
-const socketRef = { current: null }
 const ChatPage = () => {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
@@ -40,74 +38,7 @@ const [summary, setSummary] = useState("");
 const [loadingSummary, setLoadingSummary] = useState(false);
 
 
-  // const navigate = useNavigate();
-  // useEffect(() => {
-  //   const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-  //   if (!userInfo) {
-  //     navigate("/login");
-  //     return;
-  //   }
-
-  //   setUser(userInfo);
-  //   fetchChats(userInfo);
-
-  //   // Connect socket only once
-  //   if (!socket) {
-  //     socket = io(ENDPOINT);
-  //     socket.emit("setup", userInfo);
-  //     socket.on("connected", () => { });
-  //   }
-
-  //   const handleMessage = (newMsg) => {
-  //     if (!selectedChat || selectedChat._id !== newMsg.chat._id) return;
-  //     setMessages((prev) => [...prev, newMsg]);
-  //   };
-
-  //   socket.on("message received", handleMessage);
-
-  //   // ✅ Cleanup to prevent duplicate listeners
-  //   return () => {
-  //     socket.off("message received", handleMessage);
-  //   };
-  // }, [navigate, selectedChat]);
-
-// useEffect(() => {
-//   const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-//   if (!userInfo) {
-//     navigate("/login");
-//     return;
-//   }
-
-//   setUser(userInfo);
-//   fetchChats(userInfo);
-
-//   // ✅ Connect socket only once
-//   if (!socket) {
-//     socket = io(ENDPOINT);
-//     socket.emit("setup", userInfo);
-//     socket.on("connected", () => { });
-//   }
-
-//   // ✅ Join the selected chat room
-//   if (selectedChat) {
-//     socket.emit("join chat", selectedChat._id);
-//   }
-
-//   // ✅ Handle incoming messages
-//   const handleMessage = (newMsg) => {
-//     if (!selectedChat || selectedChat._id !== newMsg.chat._id) return;
-//     setMessages((prev) => [...prev, newMsg]);
-//   };
-
-//   socket.on("message received", handleMessage);
-
-//   // ✅ Cleanup to prevent duplicate listeners
-//   return () => {
-//     socket.off("message received", handleMessage);
-//   };
-// }, [navigate, selectedChat]);
-
-
+  const navigate = useNavigate();
   useEffect(() => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
     if (!userInfo) {
@@ -118,33 +49,26 @@ const [loadingSummary, setLoadingSummary] = useState(false);
     setUser(userInfo);
     fetchChats(userInfo);
 
-    // ✅ Connect socket only once
-    if (!socketRef.current) {
-      socketRef.current = io(ENDPOINT);
-      socketRef.current.emit("setup", userInfo);
-      socketRef.current.on("connected", () => { });
+    // Connect socket only once
+    if (!socket) {
+      socket = io(ENDPOINT);
+      socket.emit("setup", userInfo);
+      socket.on("connected", () => { });
     }
 
-    // ✅ Message listener
     const handleMessage = (newMsg) => {
       if (!selectedChat || selectedChat._id !== newMsg.chat._id) return;
       setMessages((prev) => [...prev, newMsg]);
     };
 
-    socketRef.current.on("message received", handleMessage);
+    socket.on("message received", handleMessage);
 
-    // ✅ Cleanup
+    // ✅ Cleanup to prevent duplicate listeners
     return () => {
-      socketRef.current?.off("message received", handleMessage);
+      socket.off("message received", handleMessage);
     };
-  }, [navigate]);
+  }, [navigate, selectedChat]);
 
-  // ✅ Join selected chat when it changes
-  useEffect(() => {
-    if (selectedChat && socketRef.current) {
-      socketRef.current.emit("join chat", selectedChat._id);
-    }
-  }, [selectedChat]);
 
   const fetchChats = async (userInfo) => {
     try {
