@@ -39,37 +39,72 @@ const [summary, setSummary] = useState("");
 const [loadingSummary, setLoadingSummary] = useState(false);
 
 
-  const navigate = useNavigate();
-  useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-    if (!userInfo) {
-      navigate("/login");
-      return;
-    }
+  // const navigate = useNavigate();
+  // useEffect(() => {
+  //   const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+  //   if (!userInfo) {
+  //     navigate("/login");
+  //     return;
+  //   }
 
-    setUser(userInfo);
-    fetchChats(userInfo);
+  //   setUser(userInfo);
+  //   fetchChats(userInfo);
 
-    // Connect socket only once
-    if (!socket) {
-      socket = io(ENDPOINT);
-      socket.emit("setup", userInfo);
-      socket.on("connected", () => { });
-    }
+  //   // Connect socket only once
+  //   if (!socket) {
+  //     socket = io(ENDPOINT);
+  //     socket.emit("setup", userInfo);
+  //     socket.on("connected", () => { });
+  //   }
 
-    const handleMessage = (newMsg) => {
-      if (!selectedChat || selectedChat._id !== newMsg.chat._id) return;
-      setMessages((prev) => [...prev, newMsg]);
-    };
+  //   const handleMessage = (newMsg) => {
+  //     if (!selectedChat || selectedChat._id !== newMsg.chat._id) return;
+  //     setMessages((prev) => [...prev, newMsg]);
+  //   };
 
-    socket.on("message received", handleMessage);
+  //   socket.on("message received", handleMessage);
 
-    // ✅ Cleanup to prevent duplicate listeners
-    return () => {
-      socket.off("message received", handleMessage);
-    };
-  }, [navigate, selectedChat]);
+  //   // ✅ Cleanup to prevent duplicate listeners
+  //   return () => {
+  //     socket.off("message received", handleMessage);
+  //   };
+  // }, [navigate, selectedChat]);
 
+useEffect(() => {
+  const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+  if (!userInfo) {
+    navigate("/login");
+    return;
+  }
+
+  setUser(userInfo);
+  fetchChats(userInfo);
+
+  // ✅ Connect socket only once
+  if (!socket) {
+    socket = io(ENDPOINT);
+    socket.emit("setup", userInfo);
+    socket.on("connected", () => { });
+  }
+
+  // ✅ Join the selected chat room
+  if (selectedChat) {
+    socket.emit("join chat", selectedChat._id);
+  }
+
+  // ✅ Handle incoming messages
+  const handleMessage = (newMsg) => {
+    if (!selectedChat || selectedChat._id !== newMsg.chat._id) return;
+    setMessages((prev) => [...prev, newMsg]);
+  };
+
+  socket.on("message received", handleMessage);
+
+  // ✅ Cleanup to prevent duplicate listeners
+  return () => {
+    socket.off("message received", handleMessage);
+  };
+}, [navigate, selectedChat]);
 
 
 
