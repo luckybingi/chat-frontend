@@ -71,6 +71,17 @@ const [loadingSummary, setLoadingSummary] = useState(false);
   }, [navigate, selectedChat]);
 
 
+// ✅ Join socket room when chat is selected
+useEffect(() => {
+  if (selectedChat && socket) {
+    socket.emit("join chat", selectedChat._id);
+    console.log(`🧩 Joined chat room: ${selectedChat._id}`);
+  }
+}, [selectedChat]);
+
+
+
+
   const fetchChats = async (userInfo) => {
     try {
       const config = {
@@ -135,14 +146,15 @@ const [loadingSummary, setLoadingSummary] = useState(false);
     try {
           const localTime = new Date(scheduledTime);
 
-    const utcTime = new Date(localTime.getTime() - localTime.getTimezoneOffset() * 60000);
-    
+    const scheduledUTC = localTime.toISOString();
+console.log(`🕓 Frontend UTC time sent: ${scheduledUTC}`);
       const config = {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${user.token}`,
         },
       };
+      // console.log(`frontend time:${scheduledUTC} `);
 
       const { data } = await axios.post(
         `${ENDPOINT}/api/message/schedule`,
@@ -150,7 +162,7 @@ const [loadingSummary, setLoadingSummary] = useState(false);
           content: newMessage,
           chatId: selectedChat._id,
           // scheduledTime,
-           scheduledTime: utcTime.toISOString(),
+           scheduledTime: scheduledUTC ,
         },
         config
       );
