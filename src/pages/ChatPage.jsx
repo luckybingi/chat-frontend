@@ -64,6 +64,7 @@ const [loadingSummary, setLoadingSummary] = useState(false);
     socket.on("message received", handleMessage);
 
     // ✅ Cleanup to prevent duplicate listeners
+    
     return () => {
       socket.off("message received", handleMessage);
     };
